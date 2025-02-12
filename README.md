@@ -46,3 +46,30 @@ exit
 vagrant destroy -f ubuntu
 ```
 ## Exercice 2
+- Notez la version fournie par ce dépôt tiers et comparez avec la version officielle de l’exercice précédent.
+`ansible [core 2.17.8]`
+La version fourni par ce dépot est plus récente. Cette  différence est du au fait que le dépot ppa est surtout utiliser par des développeur, la ou les dépots officiels, eux sont plus stable garde plus longtemps les vesion LTS.
+
+## Exercie 3
+- update du gestionnaire de packet dnf :
+`sudo dnf update`
+- installation de python :
+`sudo dnf install python3`
+`sudo dnf install python3-pip`
+- installation du dépot Epel pour installer python3-venv pas présent dans le dnf de base.
+`sudo dnf install epel-release`
+`sudo crb enable`
+`sudo dnf install python3-venv`
+- création de l’environnement virtuel python 
+`python3 -m venv ~/.venv/ansible`
+`source ~/.venv/ansible/bin/activate`
+`pip install --upgrade pip`
+- installation de ansible
+`pip install ansible`
+`ansible --version`
+```
+ansible [core 2.15.13]
+```
+
+## Exercice Authentification
+
