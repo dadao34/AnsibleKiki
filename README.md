@@ -72,13 +72,13 @@ ansible [core 2.15.13]
 ```
 
 ## Exercice Authentification
-J’ajoute ces lignes au fichier `/etc/hosts`
+J'ajoute ces lignes au fichier `/etc/hosts`
 ```
 192.168.56.20 target01.sandbox.lan target01  
 192.168.56.30 target02.sandbox.lan target02  
 192.168.56.40 target03.sandbox.lan target03
 ```
-Je vérifie la connectivité de mes VM. J’utilise la commande : `for HOST in target01 target02 target03; do ping -c 1 -q $HOST; done`
+Je vérifie la connectivité de mes VM. J'utilise la commande : `for HOST in target01 target02 target03; do ping -c 1 -q $HOST; done`
 ```
 PING target01.sandbox.lan (192.168.56.20) 56(84) bytes of data.  
   
@@ -97,4 +97,40 @@ PING target03.sandbox.lan (192.168.56.40) 56(84) bytes of data.
 rtt min/avg/max/mdev = 1.212/1.212/1.212/0.000 ms
 ```
 
-
+Je collecte les clés ssh publique de mes machines : `ssh-keyscan -t rsa target01 target02 target03 >> .ssh/known_hosts`
+```
+# target02:22 SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.10  
+# target01:22 SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.10  
+# target03:22 SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.10
+ ```
+ Je génère ma clé ssh : `ssh-keygen`
+ Enfin, je distribue ma clé sur les machines cibles en renseignant le mot de passe de mon Controller à chaque fois: 
+ ```
+ ssh-copy-id target01
+ ssh-copy-id target02
+ ssh-copy-id target03
+ ```
+ Je ping alors mes machines avec Ansible : `ansible all -i target01,target02,target03 -m ping`
+ ```
+target02 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}  
+target01 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}  
+target03 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}
+ ```
