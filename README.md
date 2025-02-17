@@ -72,4 +72,29 @@ ansible [core 2.15.13]
 ```
 
 ## Exercice Authentification
+J’ajoute ces lignes au fichier /etc/hosts
+
+192.168.56.20 target01.sandbox.lan target01  
+192.168.56.30 target02.sandbox.lan target02  
+192.168.56.40 target03.sandbox.lan target03
+
+Je vérifie la connectivité de mes VM. J’utilise la commande : for HOST in target01 target02 target03; do ping -c 1 -q $HOST; done
+
+PING target01.sandbox.lan (192.168.56.20) 56(84) bytes of data.  
+  
+--- target01.sandbox.lan ping statistics ---  
+1 packets transmitted, 1 received, 0% packet loss, time 0ms  
+rtt min/avg/max/mdev = 0.948/0.948/0.948/0.000 ms  
+PING target02.sandbox.lan (192.168.56.30) 56(84) bytes of data.  
+  
+--- target02.sandbox.lan ping statistics ---  
+1 packets transmitted, 1 received, 0% packet loss, time 0ms  
+rtt min/avg/max/mdev = 1.703/1.703/1.703/0.000 ms  
+PING target03.sandbox.lan (192.168.56.40) 56(84) bytes of data.  
+  
+--- target03.sandbox.lan ping statistics ---  
+1 packets transmitted, 1 received, 0% packet loss, time 0ms  
+rtt min/avg/max/mdev = 1.212/1.212/1.212/0.000 ms
+
+
 
