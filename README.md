@@ -189,3 +189,54 @@ Je me déplace dans mon répertoire `monprojet` et j'exécute la commande `ansib
 inventory = ./hosts  
 log_path = ~/journal/ansible.log
 ```
+- Testez la journalisation.
+`ansible target01,target02,target03 -m ping` -> `cat ~/journal/ansible.log`
+```
+target03 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}  
+target01 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}  
+target02 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}
+```
+- Créez un groupe `[testlab]` avec vos trois _Target Hosts_. && -   Définissez explicitement l’utilisateur `vagrant` pour la connexion à vos cibles.
+Je renseigne le fichier inventaire `hosts` 
+```
+[testlab]  
+target01  
+target02  
+target03  
+  
+[testlab:vars]  
+ansible_user=vagrant  
+ansible_python_interpreter=/usr/bin/python3
+```
+- Envoyez un `ping` Ansible vers le groupe de machines `[all]`.
+` ansible all -m ping `
+- Définissez l’élévation des droits pour l’utilisateur `vagrant` sur les _Target Hosts_. 
+  J'ajoute la ligne `ansible_become=yes` à mon inventaire.
+ - Affichez la première ligne du fichier `/etc/shadow` sur tous les _Target Hosts_.
+ `ansible all -a "head -n 1 /etc/shadow"`
+ ```
+target02 | CHANGED | rc=0 >>  
+root:*:19769:0:99999:7:::  
+target01 | CHANGED | rc=0 >>  
+root:*:19769:0:99999:7:::  
+target03 | CHANGED | rc=0 >>  
+root:*:19769:0:99999:7:::
+```
