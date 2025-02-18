@@ -240,3 +240,30 @@ root:*:19769:0:99999:7:::
 target03 | CHANGED | rc=0 >>  
 root:*:19769:0:99999:7:::
 ```
+## Exercice Idempotence (8)
+- Installez successivement les paquets `tree`, `git` et `nmap` sur toutes les cibles.
+```
+ansible all -m package -a "name=tree"
+ansible all -m package -a "name=git"
+ansible all -m package -a "name=nmap"
+```
+- Désinstallez successivement ces trois paquets en utilisant le paramètre supplémentaire `state=absent`.
+```
+ansible all -m package -a "name=tree state=absent"
+ansible all -m package -a "name=git state=absent"
+ansible all -m package -a "name=nmap state=absent"
+```
+- Copier le fichier `/etc/fstab` du _Control Host_ vers tous les _Target Hosts_ sous forme d’un fichier `/tmp/test3.txt`.
+ ```
+ ansible all -m copy -a "src=/etc/fstab dest=/tmp/test3.txt" 
+ ```
+
+- Supprimez le fichier `/tmp/test3.txt` sur les _Target Hosts_ en utilisant le module `file` avec le paramètre `state=absent`.
+```
+ansible all -m file -a "dest=/tmp/test3.txt state=absent"
+```
+- Enfin, affichez l’espace utilisé par la partition principale sur tous les _Target Hosts_. Que remarquez-vous ?
+```
+ansible all -a "df -h"
+```
+Je remarque que le status reste à `changed` lorsque je répète la commande.
