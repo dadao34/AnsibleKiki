@@ -267,3 +267,80 @@ ansible all -m file -a "dest=/tmp/test3.txt state=absent"
 ansible all -a "df -h"
 ```
 Je remarque que le status reste à `changed` lorsque je répète la commande.
+
+## Exercice un serveur web simple (10)
+### Écrivez trois _playbooks_ :
+-   Un premier _playbook_ `apache-debian.yml` qui installe Apache sur l’hôte `debian` avec une page personnalisée _Apache web server running on Debian Linux_.
+```
+--- # apache-debian.yml  
+- hosts: debian  
+  
+tasks:  
+  
+- name: Update package apt  
+apt:  
+update_cache: true  
+  
+- name: Install Apache  
+apt:  
+name: apache2  
+  
+- name: Upload index page  
+copy:  
+dest: /var/www/html/index.html  
+mode: 0644  
+src: ../ressources/index.html  
+...
+```
+-   Un deuxième _playbook_ `apache-rocky.yml` qui installe Apache sur l’hôte `rocky` avec une page personnalisée _Apache web server running on Rocky Linux_.
+```
+--- # apache-rocky.yml  
+  
+- hosts: rocky  
+  
+tasks:  
+  
+- name: Update package dnf  
+dnf:  
+update_cache: true  
+  
+- name: install Apache  
+dnf:  
+name: httpd  
+  
+- name: start Apache service  
+service:  
+name: httpd  
+state: started  
+  
+- name: Upload index page  
+copy:  
+dest: /var/www/html/index.html  
+src: ../ressources/index.html  
+mode: 0644  
+...
+```
+-   Un troisième _playbook_ `apache-suse.yml` qui installe Apache sur l’hôte `suse` avec une page personnalisée _Apache web server running on SUSE Linux_.
+```
+---  # apache-suse.yml
+
+- hosts: suse
+
+  tasks:
+
+    - name: Install Apache
+      zypper:
+        name: apache2
+
+    - name: Start Apache service
+      service:
+        name: apache2
+        state: started
+
+    - name: Upload index page
+      copy:
+        dest: /srv/www/htdocs/index.html
+        src: ../ressources/index.html
+        mode: 0644
+...
+```
