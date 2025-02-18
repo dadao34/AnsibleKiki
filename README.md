@@ -134,3 +134,58 @@ target03 | SUCCESS => {
 "ping": "pong"  
 }
  ```
+## Exercice Configuration de base (6)
+- Éditez `/etc/hosts` de manière à ce que les _Target Hosts_ soient joignables par leur nom d’hôte simple.
+```
+192.168.56.20 sandbox.lan.target01 target01  
+192.168.56.30 sandbox.lan.target02 target02  
+192.168.56.40 sandbox.lan.target03 target03
+```
+- Configurez l’authentification par clé SSH avec les trois _Target Hosts_.
+Depuis l'host, je génère ma Clé : `ssh-keygen`. J'ajoute ensuite les machines comme hôtes ssh connus `ssh-keyscan -t rsa target01 target02 target03 >> .ssh/known_hosts` et enfin je copie ma clé ssh publique sur les machines cibles : 
+```
+ssh-copy-id vagrant@target01
+ssh-copy-id vagrant@target02
+ssh-copy-id vagrant@target03
+``` 
+- Installez Ansible.
+Je vérifie si ansible n'est pas déja installer sur la machine control `ansible --version`. La commande m'indique qu'Ansible  n'est pas installé, je l'installe donc : `sudo apt install ansible`
+- Envoyez un premier `ping` Ansible sans configuration.
+`ansible all -i target01,target02,target03 -m ping`
+```target03 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}  
+target01 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}  
+target02 | SUCCESS => {  
+"ansible_facts": {  
+"discovered_interpreter_python": "/usr/bin/python3"  
+},  
+"changed": false,  
+"ping": "pong"  
+}
+```
+- Créez un répertoire de projet `~/monprojet`.
+`mkdir ~/monprojet`
+- Créez un fichier vide `ansible.cfg` dans ce répertoire.
+`touch ansible.cfg`
+- Vérifiez si ce fichier est bien pris en compte par Ansible.
+Je me déplace dans mon répertoire `monprojet` et j'exécute la commande `ansible --version` Dans le résultat de la commande, j'y trouve la ligne suivante : `config file = /home/vagrant/monprojet/ansible.cfg`
+- Spécifiez un inventaire nommé `hosts`
+	`touch hosts`
+- Activez la journalisation dans `~/journal/ansible.log`.
+	`mkdir ~/journal` -> `touch ~/journal/ansible.log`. Je renseigne maintenant les valeurs suivantes dans `ansible.cfg`. 
+```
+[defaults]  
+inventory = ./hosts  
+log_path = ~/journal/ansible.log
+```
