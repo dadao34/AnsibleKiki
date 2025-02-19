@@ -344,3 +344,201 @@ mode: 0644
         mode: 0644
 ...
 ```
+## Exercice handler (11)
+- Écrivez un playbook `chrony.yml` qui assure la synchronisation NTP de tous vos _Target Hosts_
+```
+---  # chrony.yml
+- hosts: redhat
+
+  tasks:
+
+    - name: Update package dnf
+      dnf:
+        update_cache: true
+
+    - name: Install Chrony
+      dnf:
+        name: chrony
+
+    - name: Start chrony service
+      service:
+        name: chronyd
+        state: started
+        enabled: true
+
+    - name: Copy Chrony conf
+      copy:
+        dest: /etc/chrony.conf
+        src: ../ressources/chrony.conf
+        mode: 0644
+      notify: Restart Chrony
+
+  handlers:
+
+    - name: Restart Chrony
+      service:
+        name: chronyd
+        state: restarted
+        enabled: true
+
+...
+```
+## Exercice variables (12)
+- Écrivez un _playbook_ `myvars1.yml` qui affiche respectivement votre voiture et votre moto préférée en utilisant le module `debug` et deux variables `mycar` et `mybike` définies en tant que _play vars_.
+```
+--- # myvars1.yml  
+- hosts: localhost  
+  gather_facts: false  
+  
+  vars:  
+    mycar: Peugeot  
+    mybike: Suzuki  
+  
+  tasks:  
+  - debug:  
+    msg: "My favorite car is {{mycar}} ans my favorite bike is {{mybike}}"  
+...
+```
+- En utilisant les _extra vars_, remplacez successivement l’une et l’autre marque – puis les deux à la fois – avant d’exécuter le _play_.
+
+[vagrant@control ema]$ ansible-playbook playbooks/myvars1.yml -e mycar=Clio  
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [localhost] => {  
+"msg": "My favorite car is Clio ans my favorite bike is Suzuki"  
+}
+```
+ [vagrant@control ema]$ ansible-playbook playbooks/myvars1.yml -e mybike=Clio
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [localhost] => {  
+"msg": "My favorite car is Peugeot ans my favorite bike is Clio"  
+}
+```
+ [vagrant@control ema]$ ansible-playbook playbooks/myvars1.yml -e mybike=Clio -e mycar=Clio
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [localhost] => {  
+"msg": "My favorite car is Clio ans my favorite bike is Clio"  
+}
+```
+- Écrivez un _playbook_ `myvars2.yml` qui fait essentiellement la même chose que `myvars1.yml`, mais en utilisant une tâche avec `set_fact` pour définir les deux variables.
+```
+--- # myvars2.yml  
+- hosts: localhost  
+  gather_facts: false  
+  
+tasks:  
+  
+  - name: Define variables  
+    set_fact:  
+      mycar: Peugeot   
+      mybike: Suzuki  
+  
+  - debug:  
+      msg: "My favorite car is {{mycar}} ans my favorite bike is {{mybike}}"  
+...
+```
+-   Là aussi, essayez de remplacer les deux variables en utilisant des _extra vars_ avant l’exécution du play.
+[vagrant@control ema]$ ansible-playbook playbooks/myvars2.yml -e mycar=Clio  
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [localhost] => {  
+"msg": "My favorite car is Clio ans my favorite bike is Suzuki"  
+}
+```
+ [vagrant@control ema]$ ansible-playbook playbooks/myvars2.yml -e mybike=Clio
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [localhost] => {  
+"msg": "My favorite car is Peugeot ans my favorite bike is Clio"  
+}
+```
+ [vagrant@control ema]$ ansible-playbook playbooks/myvars2.yml -e mybike=Clio -e mycar=Clio
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [localhost] => {  
+"msg": "My favorite car is Clio ans my favorite bike is Clio"  
+}
+```
+- Écrivez un _playbook_ `myvars3.yml` qui affiche le contenu des deux variables `mycar` et `mybike` mais sans les définir. Avant d’exécuter le _playbook_, définissez `VW` et `BMW` comme valeurs par défaut pour `mycar` et `mybike` pour tous les hôtes, en utilisant l’endroit approprié.
+
+Je créée un dossier groups_vars : `mkdir groups`, j'y créé un fichier all.yml : `nano groups_vars/all.yml`
+```
+--- # all.yml  
+mycar: BMW  
+mybike: VM
+...
+```
+Je créée mon playbook  `nano playbooks/myvars3.yml`
+```
+--- # myvars3.yml  
+- hosts: localhost  
+  gather_facts: false  
+  
+  tasks:  
+  - debug:  
+    msg: "My favorite car is {{mycar}} ans my favorite bike is {{mybike}}"  
+...
+```
+- Effectuez le nécessaire pour remplacer `VW` et `BMW` par `Mercedes` et `Honda` sur l’hôte `target02`.
+
+Je créée un répertoire host_vars `mkdir host_vars`, j'y ajoute le fichier target02.yml `nano host_vars/target02.yml`
+```
+--- # target02.yml  
+mycar: Mercedes  
+mybike: Honda  
+  
+...
+```
+je crée un playbook myvars4.yml :
+```
+--- # myvars4.yml  
+- hosts: all  
+  gather_facts: false  
+  
+  tasks:  
+  - debug:
+    msg: "My favorite car is {{mycar}} ans my favorite bike is {{mybike}}"  
+...
+```
+j'exécute mon playbook : 
+```
+TASK [debug] *******************************************************************************************************************************************************************************************************************************  
+ok: [target02] => {  
+"msg": "My favorite car is Mercedes ans my favorite bike is Honda"  
+}  
+ok: [target01] => {  
+"msg": "My favorite car is BMW ans my favorite bike is VM"  
+}  
+ok: [target03] => {  
+"msg": "My favorite car is BMW ans my favorite bike is VM"  
+}
+```
+
+- Écrivez un playbook `display_user.yml` qui affiche un utilisateur et son mot de passe correspondant à l’aide des variables `user` et `password`. Ces deux variables devront être saisies de manière interactive pendant l’exécution du _playbook_. Les valeurs par défaut seront `microlinux` pour `user` et `yatahongaga` pour `password`. Le mot de passe ne devra pas s’afficher pendant la saisie.
+
+```
+--- # display_user.yml  
+  
+- hosts: localhost  
+  gather_facts: false  
+  
+  vars_prompt:  
+  
+  - name: user  
+    prompt: Please select a value for user  
+    default: microlinux  
+    private: false  
+  
+  - name: password  
+    prompt: And now for password (secret)  
+    private: true  
+    default: yatahongaga  
+  
+  tasks:  
+  - debug:  
+    msg: "user is {{user}}, password is {{password}}"  
+...
+```
+
