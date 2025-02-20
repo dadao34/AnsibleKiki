@@ -541,4 +541,235 @@ ok: [target03] => {
     msg: "user is {{user}}, password is {{password}}"  
 ...
 ```
+## Exercice variables enregistrées (13)
+.Écrivez un _playbook_ `kernel.yml` qui affiche les infos détaillées du noyau sur tous vos _Target Hosts_. Utilisez la commande `uname -a` et le module `debug` avec le paramètre `msg`.
+```
+---  # kernel.yml
 
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: "Afficher les infos du noyau"
+      command: uname -a
+      change_when: false
+      register: kernel_info
+
+    - name: "Afficher les infos du noyau"
+      debug:
+        msg: "{{ kernel_info.stdout }}"
+
+...
+```
+- Essayez d’obtenir le même résultat en utilisant le paramètre `var` du module `debug`.
+```
+---  # kernel2.yml
+
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: "Afficher les infos du noyau"
+      command: uname -a
+      change_when: false
+      register: kernel_info
+
+    - name: "Afficher les infos du noyau"
+      debug:
+        var: kernel_info.stdout
+
+...
+```
+- Écrivez un playbook packages.yml qui affiche le nombre total de paquets RPM installés sur les hôtes rocky et suse (rpm -qa | wc -l).
+```
+---  # packages.yml
+
+- hosts: rocky, suse
+  gather_facts: false
+
+  tasks:
+    - name: "Afficher le nombre de paquets RPM installés"
+      shell: rpm -qa | wc -l
+      change_when: false
+      register: rpm_count
+
+    - name: "Afficher le nombre de paquets RPM installés"
+      debug:
+        msg: "Nombre de paquets RPM installés: {{ rpm_count.stdout }}"
+...
+```
+## Exercice Facts et variables implicites (14)
+Écrivez trois _playbooks_ pour afficher des informations sur chacun des _Target Hosts_ :
+
+-   `pkg-info.yml` pour afficher le gestionnaire de paquets utilisé
+```
+---  # pkg-info.yml
+
+- hosts: all
+
+  tasks:
+    - name: "Gestionnaire de paquets"
+      debug:
+        var: ansible_pkg_mgr
+
+...
+```
+-   `python-info.yml` pour afficher la version de Python installée
+```
+---  # python-info.yml
+
+- hosts: all
+
+  tasks:
+    - name: "Version de Python installée"
+      debug:
+        var: ansible_python_version
+
+...
+```
+- `dns-info.yml` pour afficher le(s) serveur(s) DNS utilisé(s)
+```
+---  # dns-info.yml
+
+- hosts: all
+
+  tasks:
+    - name: "Serveurs DNS utilisés"
+      debug:
+        var: ansible_dns.nameservers
+
+...
+```
+## Exercice cibles hétérogènes (15)
+Écrivez successivement deux _playbooks_ pour mettre en place la **synchronisation NTP avec Chrony** sur vos quatre _Target Hosts_ sous Debian, Rocky Linux, SUSE Linux et Ubuntu. Il vous faudra identifier le nom du paquet, le service correspondant et le chemin vers le fichier de configuration par défaut pour chacune des distributions.
+
+- Le premier _playbook_ `chrony-01.yml` utilisera les modules de gestion de paquets natifs `apt`, `dnf` et `zypper` et s’inspirera de la méthode « gros sabots » utilisée plus haut dans cet article.
+```
+---  # chrony-01.yml
+
+- hosts: all
+
+  tasks:
+    - name: Update package Debian/Ubutnu
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == 'Debian'
+    
+    - name: Install Chrony on Debian/Ubuntu
+      apt:
+        name: chrony
+      when: ansible_os_family == 'Debian'
+
+    - name: Install Chrony on Rocky
+      dnf:
+        name: chrony
+      when: ansible_distribution == "Rocky"
+    
+    - name: Install Chrony on SUSE
+      zypper:
+        name: chrony
+      when: ansible_distribution == "openSUSE Leap"
+    
+    - name: Start service Chrony
+      service:
+        name: chronyd
+        state: started
+        enabled: true
+    
+    - name: Configure Chrony on Debian/Ubuntu
+      copy:
+        dest: /etc/chrony/chrony.conf
+        mode: 0644
+        owner: root
+        group: root
+        content: |
+ # chrony.conf
+ server 0.fr.pool.ntp.org iburst
+ server 1.fr.pool.ntp.org iburst
+ server 2.fr.pool.ntp.org iburst
+ server 3.fr.pool.ntp.org iburst
+ driftfile /var/lib/chrony/drift
+ makestep 1.0 3
+ rtcsync
+ logdir /var/log/chrony
+      notify: Reload Chrony
+      when: ansible_os_family == 'Debian'
+    
+    - name: Configure Chrony on Rocky/SUSE
+      copy:
+        dest: /etc/chrony.conf
+        mode: 0644
+        owner: root
+        group: root
+        src: ../ressources/chrony.conf
+      notify: Reload Chrony
+      when: ansible_os_family == 'RedHat' or ansible_os_family == 'openSUSE Leap'
+
+  handlers:
+    - name: Reload Chrony
+      service:
+        name: chronyd
+        state: restarted
+
+...
+```
+- Le deuxième _playbook_ `chrony-02.yml` définira trois variables `chrony_package`, `chrony_service` et `chrony_confdir` et utilisera le module de gestion de paquets générique `package`.
+```
+---  # chrony-02.yml
+
+- hosts: all
+
+  vars:
+    chrony:
+      Debian:
+        package: chrony
+        service: chrony
+        confdir: /etc/chrony
+      Ubuntu:
+        package: chrony
+        service: chrony
+        confdir: /etc/chrony
+      Rocky:
+        package: chrony
+        service: chronyd
+        confdir: /etc
+      openSUSE Leap:
+        package: chrony
+        service: chronyd
+        confdir: /etc
+
+  tasks:
+    - name: Update package information on Debian/Ubuntu
+      apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+    
+    - name: Install Chrony
+      package:
+        name: "{{ chrony[ansible_distribution]['package'] }}"
+        state: present
+
+    - name: Start service Chrony
+      service:
+        name: "{{ chrony[ansible_distribution]['service'] }}"
+        state: started
+        enabled: true
+    
+    - name: Configure Chrony
+      copy:
+        dest: "{{ chrony[ansible_distribution]['confdir'] }}/chrony.conf"
+        mode: 0644
+        owner: root
+        group: root
+        src: ../ressources/chrony.conf
+      notify: Reload Chrony
+  
+  handlers:
+    - name: Reload Chrony
+      service:
+        name: "{{ chrony[ansible_distribution]['service'] }}"
+        state: restarted
+...
+```
